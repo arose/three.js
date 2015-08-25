@@ -16,6 +16,34 @@ Menubar.Edit = function ( editor ) {
 	options.setClass( 'options' );
 	container.add( options );
 
+	// Undo
+
+	var option = new UI.Panel();
+	option.setClass( 'option' );
+	option.setTextContent( 'Undo' );
+	option.onClick( function () {
+
+		editor.history.undo();
+
+	} );
+	options.add( option );
+
+	// Redo
+
+	var option = new UI.Panel();
+	option.setClass( 'option' );
+	option.setTextContent( 'Redo' );
+	option.onClick( function () {
+
+		editor.history.redo();
+
+	} );
+	options.add( option );
+
+	// ---
+
+	options.add( new UI.HorizontalRule() );
+
 	// Clone
 
 	var option = new UI.Panel();
@@ -25,7 +53,7 @@ Menubar.Edit = function ( editor ) {
 
 		var object = editor.selected;
 
-		if ( object.parent === undefined ) return; // avoid cloning the camera or scene
+		if ( object.parent === null ) return; // avoid cloning the camera or scene
 
 		object = object.clone();
 
@@ -41,7 +69,7 @@ Menubar.Edit = function ( editor ) {
 	option.setClass( 'option' );
 	option.setTextContent( 'Delete' );
 	option.onClick( function () {
-	
+
 		var object = editor.selected;
 
 		if ( confirm( 'Delete ' + object.name + '?' ) === false ) return;
@@ -53,37 +81,79 @@ Menubar.Edit = function ( editor ) {
 	} );
 	options.add( option );
 
-	//
-
-	options.add( new UI.HorizontalRule() );
-
-	// Flatten
+	// Minify shaders
 
 	var option = new UI.Panel();
 	option.setClass( 'option' );
-	option.setTextContent( 'Flatten' );
-	option.onClick( function () {
+	option.setTextContent( 'Minify Shaders' );
+	option.onClick( function() {
 
-		var object = editor.selected;
+		var root = editor.selected || editor.scene;
 
-		if ( object.parent === undefined ) return; // avoid flattening the camera or scene
+		var errors = [];
+		var nMaterialsChanged = 0;
 
-		if ( confirm( 'Flatten ' + object.name + '?' ) === false ) return;
+		var path = [];
 
-		var geometry = object.geometry;
+		function getPath ( object ) {
 
-		geometry.applyMatrix( object.matrix );
-		geometry.verticesNeedUpdate = true;
-		geometry.normalsNeedUpdate = true;
+			path.length = 0;
 
-		object.position.set( 0, 0, 0 );
-		object.rotation.set( 0, 0, 0 );
-		object.scale.set( 1, 1, 1 );
+			var parent = object.parent;
+			if ( parent !== undefined ) getPath( parent );
 
-		editor.signals.objectChanged.dispatch( object );
+			path.push( object.name || object.uuid );
+
+			return path;
+
+		}
+
+		root.traverse( function ( object ) {
+
+			var material = object.material;
+
+			if ( material instanceof THREE.ShaderMaterial ) {
+
+				try {
+
+					var shader = glslprep.minifyGlsl( [
+							material.vertexShader, material.fragmentShader ] );
+
+					material.vertexShader = shader[ 0 ];
+					material.fragmentShader = shader[ 1 ];
+
+					++nMaterialsChanged;
+
+				} catch ( e ) {
+
+					var path = getPath( object ).join( "/" );
+
+					if ( e instanceof glslprep.SyntaxError )
+
+						errors.push( path + ":" +
+								e.line + ":" + e.column + ": " + e.message );
+
+					else {
+
+						errors.push( path +
+								": Unexpected error (see console for details)." );
+
+						console.error( e.stack || e );
+
+					}
+
+				}
+
+			}
+
+		} );
+
+		window.alert( nMaterialsChanged +
+				" material(s) were changed.\n" + errors.join( "\n" ) );
 
 	} );
 	options.add( option );
+
 
 	return container;
 

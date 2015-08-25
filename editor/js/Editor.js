@@ -70,10 +70,13 @@ var Editor = function () {
 	};
 
 	this.config = new Config();
+	this.history = new History( this );
 	this.storage = new Storage();
 	this.loader = new Loader( this );
 
 	this.camera = new THREE.PerspectiveCamera( 50, 1, 1, 100000 );
+	this.camera.position.set( 500, 250, 500 );
+	this.camera.lookAt( new THREE.Vector3() );
 	this.camera.name = 'Camera';
 
 	this.scene = new THREE.Scene();
@@ -155,7 +158,31 @@ Editor.prototype = {
 
 	},
 
-	setObjectName: function ( object, name ) {
+	moveObject: function ( object, parent, before ) {
+
+		if ( parent === undefined ) {
+
+			parent = this.scene;
+
+		}
+
+		parent.add( object );
+
+		// sort children array
+
+		if ( before !== undefined ) {
+
+			var index = parent.children.indexOf( before );
+			parent.children.splice( index, 0, object );
+			parent.children.pop();
+
+		}
+
+		this.signals.sceneGraphChanged.dispatch();
+
+	},
+
+	nameObject: function ( object, name ) {
 
 		object.name = name;
 		this.signals.sceneGraphChanged.dispatch();
@@ -164,7 +191,7 @@ Editor.prototype = {
 
 	removeObject: function ( object ) {
 
-		if ( object.parent === undefined ) return; // avoid deleting the camera or scene
+		if ( object.parent === null ) return; // avoid deleting the camera or scene
 
 		var scope = this;
 
@@ -319,32 +346,6 @@ Editor.prototype = {
 
 	//
 
-	parent: function ( object, parent, before ) {
-
-		if ( parent === undefined ) {
-
-			parent = this.scene;
-
-		}
-
-		parent.add( object );
-
-		// sort children array
-
-		if ( before !== undefined ) {
-
-			var index = parent.children.indexOf( before );
-			parent.children.splice( index, 0, object );
-			parent.children.pop();
-
-		}
-
-		this.signals.sceneGraphChanged.dispatch();
-
-	},
-
-	//
-
 	select: function ( object ) {
 
 		if ( this.selected === object ) return;
@@ -413,6 +414,8 @@ Editor.prototype = {
 
 	clear: function () {
 
+		this.history.clear();
+
 		this.camera.position.set( 500, 250, 500 );
 		this.camera.lookAt( new THREE.Vector3() );
 
@@ -445,10 +448,7 @@ Editor.prototype = {
 
 		if ( json.scene === undefined ) {
 
-			var scene = loader.parse( json );
-
-			this.setScene( scene );
-
+			this.setScene( loader.parse( json ) );
 			return;
 
 		}
@@ -472,6 +472,9 @@ Editor.prototype = {
 
 		return {
 
+			project: {
+				vr: this.config.getKey( 'project/vr' )
+			},
 			camera: this.camera.toJSON(),
 			scene: this.scene.toJSON(),
 			scripts: this.scripts

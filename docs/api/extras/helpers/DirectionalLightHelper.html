@@ -2,13 +2,14 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<script src="../../../list.js"></script>
-		<script src="../../../page.js"></script>
-		<link type="text/css" rel="stylesheet" href="../../../page.css" />
+		<base href="../../../" />
+		<script src="list.js"></script>
+		<script src="page.js"></script>
+		<link type="text/css" rel="stylesheet" href="page.css" />
 	</head>
 	<body>
 		[page:Object3D] &rarr;
-		
+
 		<h1>[name]</h1>
 
 		<div class="desc">Visualize a [page:DirectionalLight]'s effect on the scene</div>
@@ -17,7 +18,7 @@
 		<h2>Constructor</h2>
 
 
-		<h3>[name]([DirectionalLight:todo light], [page:Number size])</h3>
+		<h3>[name]([page:DirectionalLight light], [page:Number size])</h3>
 		<div>
 		light -- [page:DirectionalLight] -- Light to visualize <br />
 		size -- dimensions of the plane
@@ -28,22 +29,22 @@
 
 
 		<h2>Properties</h2>
-		
+
 
 		<h3>[property:Line lightPlane]</h3>
 		<div>
-		todo
-		</div> 
+		Contains the line mesh showing the location of the directional light.
+		</div>
 
 		<h3>[property:DirectionalLight light]</h3>
 		<div>
-		todo
-		</div> 
+		Contains the directionalLight.
+		</div>
 
 		<h3>[property:Line targetLine]</h3>
 		<div>
-		todo
-		</div> 
+		Contains the line mesh that shows the direction of the light.
+		</div>
 
 		<h2>Methods</h2>
 

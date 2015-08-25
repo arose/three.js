@@ -2,9 +2,10 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<script src="../../list.js"></script>
-		<script src="../../page.js"></script>
-		<link type="text/css" rel="stylesheet" href="../../page.css" />
+		<base href="../../" />
+		<script src="list.js"></script>
+		<script src="page.js"></script>
+		<link type="text/css" rel="stylesheet" href="page.css" />
 	</head>
 	<body>
 		<h1>[name]</h1>
@@ -23,8 +24,8 @@
 			// calculate mouse position in normalized device coordinates
 			// (-1 to +1) for both components
 
-			mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1
-			mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1		
+			mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+			mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;		
 		
 		}
 
@@ -36,9 +37,9 @@
 			// calculate objects intersecting the picking ray
 			var intersects = raycaster.intersectObjects( scene.children );
 
-			for ( var intersect in intersects ) {
+			for ( var i = 0; i < intersects.length; i++ ) {
 
-				intersect.object.material.color = new THREE.Color( 0xff0000 );
+				intersects[ i ].object.material.color.set( 0xff0000 );
 			
 			}
 			
@@ -96,11 +97,6 @@
 		<div>
 		The far factor of the raycaster. This value indicates which objects can be discarded based on the distance.<br />
 		This value shouldn't be negative and should be larger than the near property. 
-		</div>
-
-		<h3>[property:float precision]</h3>
-		<div>
-		The precision factor of the raycaster when intersecting [page:Mesh] objects. 
 		</div>
 
 		<h3>.[page:float linePrecision]</h3>

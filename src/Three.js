@@ -2,25 +2,96 @@
  * @author mrdoob / http://mrdoob.com/
  */
 
-var THREE = { REVISION: '71dev' };
+var THREE = { REVISION: '72dev' };
 
-// browserify support
+//
 
-if ( typeof module === 'object' ) {
+if ( typeof define === 'function' && define.amd ) {
 
-	module.exports = THREE;
+    define( 'three', THREE );
+
+} else if ( 'undefined' !== typeof exports && 'undefined' !== typeof module ) {
+
+    module.exports = THREE;
 
 }
 
+
 // polyfills
+
+if ( self.requestAnimationFrame === undefined || self.cancelAnimationFrame === undefined ) {
+
+  // Missing in Android stock browser.
+
+  ( function () {
+
+  	var lastTime = 0;
+  	var vendors = [ 'ms', 'moz', 'webkit', 'o' ];
+
+  	for ( var x = 0; x < vendors.length && ! self.requestAnimationFrame; ++ x ) {
+
+  		self.requestAnimationFrame = self[ vendors[ x ] + 'RequestAnimationFrame' ];
+  		self.cancelAnimationFrame = self[ vendors[ x ] + 'CancelAnimationFrame' ] || self[ vendors[ x ] + 'CancelRequestAnimationFrame' ];
+
+  	}
+
+  	if ( self.requestAnimationFrame === undefined && self.setTimeout !== undefined ) {
+
+  		self.requestAnimationFrame = function ( callback ) {
+
+  			var currTime = Date.now(), timeToCall = Math.max( 0, 16 - ( currTime - lastTime ) );
+  			var id = self.setTimeout( function () {
+
+  				callback( currTime + timeToCall );
+
+  			}, timeToCall );
+  			lastTime = currTime + timeToCall;
+  			return id;
+
+  		};
+
+  	}
+
+  	if ( self.cancelAnimationFrame === undefined && self.clearTimeout !== undefined ) {
+
+  		self.cancelAnimationFrame = function ( id ) {
+
+  			self.clearTimeout( id );
+
+  		};
+
+  	}
+
+  }() );
+
+}
 
 if ( Math.sign === undefined ) {
 
+	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/sign
+
 	Math.sign = function ( x ) {
 
-		return ( x < 0 ) ? - 1 : ( x > 0 ) ? 1 : 0;
+		return ( x < 0 ) ? - 1 : ( x > 0 ) ? 1 : + x;
 
 	};
+
+}
+
+if ( Function.prototype.name === undefined && Object.defineProperty !== undefined ) {
+
+	// Missing in IE9-11.
+	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/name
+
+	Object.defineProperty( Function.prototype, 'name', {
+
+		get: function () {
+
+			return this.toString().match( /^\s*function\s*(\S*)\s*\(/ )[ 1 ];
+
+		}
+
+	} );
 
 }
 
@@ -105,6 +176,17 @@ THREE.OneMinusDstAlphaFactor = 207;
 THREE.DstColorFactor = 208;
 THREE.OneMinusDstColorFactor = 209;
 THREE.SrcAlphaSaturateFactor = 210;
+
+// depth modes
+
+THREE.NeverDepth = 0;
+THREE.AlwaysDepth = 1;
+THREE.LessDepth = 2;
+THREE.LessEqualDepth = 3;
+THREE.EqualDepth = 4;
+THREE.GreaterEqualDepth = 5;
+THREE.GreaterDepth = 6;
+THREE.NotEqualDepth = 7;
 
 
 // TEXTURE CONSTANTS
