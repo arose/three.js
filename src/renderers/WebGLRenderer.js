@@ -214,6 +214,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	var state = new THREE.WebGLState( _gl, extensions, paramThreeToGL );
 	var properties = new THREE.WebGLProperties();
+
 	var objects = new THREE.WebGLObjects( _gl, properties, this.info );
 
 	var bufferRenderer = new THREE.WebGLBufferRenderer( _gl, extensions, _infoRender );
@@ -764,7 +765,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		setMaterial( material );
 
-		var program = _this.setProgram( camera, lights, fog, material, object );
+		var program = setProgram( camera, lights, fog, material, object );
 
 		var updateBuffers = false;
 		var geometryProgram = geometry.id + '_' + program.id + '_' + material.wireframe;
@@ -1958,9 +1959,38 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		}
 
+		if( material.hasDynamicUniforms === true ){
+
+			updateDynamicUniforms( materialProperties.uniformsList, camera, object );
+
+		}
+
 		return program;
 
-	};
+	}
+
+	function updateDynamicUniforms ( uniforms, camera, object ) {
+
+		var dynamicUniforms = [];
+
+		for ( var j = 0, jl = uniforms.length; j < jl; j ++ ) {
+
+			var uniform = uniforms[ j ][ 0 ];
+			var valueFunc = uniform.valueFunc;
+
+			if( typeof valueFunc === "function" ){
+
+				uniform.value = valueFunc( uniform.value, camera, object );
+
+				dynamicUniforms.push( uniforms[ j ] );
+
+			}
+
+		}
+
+		loadUniformsGeneric( dynamicUniforms );
+
+	}
 
 	// Uniforms (refresh uniforms objects)
 
@@ -2239,17 +2269,17 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	}
 
-	this.loadUniformsGeneric = function ( uniforms ) {
+	function loadUniformsGeneric ( uniforms ) {
 
 		var texture, textureUnit, offset;
-
+		var count = 0;
 		for ( var j = 0, jl = uniforms.length; j < jl; j ++ ) {
 
 			var uniform = uniforms[ j ][ 0 ];
 
 			// needsUpdate property is not added to all uniforms.
 			if ( uniform.needsUpdate === false ) continue;
-
+			count++;
 			var type = uniform.type;
 			var value = uniform.value;
 			var location = uniforms[ j ][ 1 ];
@@ -2574,7 +2604,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 			}
 
 		}
-
+		// console.log( "count", count )
 	};
 
 	function setColorLinear( array, offset, color, intensity ) {

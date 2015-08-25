@@ -59,22 +59,11 @@
 		<div id="container"></div>
 
 		<script src="../build/three.min.js"></script>
-
 		<script src="../src/renderers/WebGLRenderer.js"></script>
-
 		<script src="js/controls/TrackballControls.js"></script>
-
 		<script src="js/libs/stats.min.js"></script>
 
 		<script id="pickingVert" type="x-shader/x-vertex">
-
-			// precision mediump float;
-			// precision mediump int;
-
-			// uniform mat4 modelViewMatrix;
-			// uniform mat4 projectionMatrix;
-
-			// attribute vec3 position;
 
 			void main()	{
 
@@ -85,9 +74,6 @@
 		</script>
 
 		<script id="pickingFrag" type="x-shader/x-fragment">
-
-			// precision mediump float;
-			// precision mediump int;
 
 			uniform vec3 pickingColor;
 
@@ -107,12 +93,14 @@
 			var highlightBox;
 			var material, pickingMaterial
 			var materialList = [];
-			var geometry;
+			var geometry, geometrySize;
 
 			var mouse = new THREE.Vector2();
 			var scale = 1.03;
 
-			//create buffer for reading single pixel
+			var loader = new THREE.JSONLoader();
+
+			//create buffer for reading a single pixel
 			var pixelBuffer = new Uint8Array( 4 );
 
 			//
@@ -160,28 +148,53 @@
 				if( geometry ) geometry.dispose();
 
 				scene = new THREE.Scene();
+				scene.add( camera );
+				scene.add( highlightBox );
+
 				pickingScene = new THREE.Scene();
 				pickingData = {};
 				materialList = [];
 
-				// make instances
+				// patching the phong shader
+				THREE.ShaderLib[ "phong" ].uniforms.diffuse.valueFunc = function( value, camera, object ){
+					value.setHex( object.userData.color );
+					return value;
+				};
 
-				var loader = new THREE.JSONLoader();
+				material = new THREE.MeshPhongMaterial( {
+					shading: THREE.SmoothShading,
+					color: new THREE.Color()
+				} );
+				materialList.push( material );
+
+				pickingMaterial = new THREE.ShaderMaterial( {
+					uniforms: {
+						pickingColor: {
+							type: "c",
+							value: new THREE.Color(),
+							valueFunc: function( value, camera, object ){
+								value.setHex( object.userData.pickingColor );
+								return value;
+							}
+						}
+					},
+					vertexShader: document.getElementById( 'pickingVert' ).textContent,
+					fragmentShader: document.getElementById( 'pickingFrag' ).textContent
+				} );
+				materialList.push( pickingMaterial );
+
+				// make instances
 				loader.load( 'obj/Suzanne.js', function ( geo ) {
 
-					geometry = geo;
-
-					geometry.computeVertexNormals();
-
+					// geometry = geo;
+					geometry = new THREE.BoxGeometry( 1, 1, 1 );
+					// geometry.computeVertexNormals();
 					geometry.computeBoundingBox();
-					var size = geometry.boundingBox.size();
 
-					highlightBox.children[0].geometry = new THREE.BoxGeometry(
-						size.x, size.y, size.z
-					);
-					highlightBox.children[1].geometry = new THREE.BoxGeometry(
-						size.x, size.y, size.z
-					);
+					geometrySize = geometry.boundingBox.size();
+
+					// create a lot of geometry instances to compare the time
+					// needed to initialize a single vs. separate materials
 
 					console.time( "init mesh" );
 
@@ -208,47 +221,42 @@
 
 						var pickingObject = object.clone();
 
-						pickingScene.add( pickingObject );
-
-						//
-
 						if( useSingleMaterial ){
 
+							object.material.hasDynamicUniforms = true;
 							object.userData[ "color" ] = color;
 
 							pickingObject.material = pickingMaterial;
+							pickingObject.material.hasDynamicUniforms = true;
 							pickingObject.userData[ "pickingColor" ] = i + 1;
 
 						}else{
 
 							object.material = material.clone();
 							object.material.color.setHex( color );
+							object.material.hasDynamicUniforms = false;
 							materialList.push( object.material );
 
 							pickingObject.material = pickingMaterial.clone();
+							pickingObject.material.hasDynamicUniforms = false;
 							pickingObject.material.uniforms.pickingColor.value.setHex( i + 1 );
-							materialList.push( pickingObject.material )
+							materialList.push( pickingObject.material );
 
 						}
+
+						pickingScene.add( pickingObject );
 
 					}
 
 					//
-
-					scene.add( camera );
-
-					scene.add( highlightBox );
 
 					render();
 
 					console.timeEnd( "init mesh" );
 
 					console.log( "material count", materialList.length );
-
 					console.log( renderer.info.memory )
 					console.log( renderer.info.render )
-
-					console.log( material )
 
 				} );
 
@@ -261,8 +269,9 @@
 				camera = new THREE.PerspectiveCamera(
 					70, window.innerWidth / window.innerHeight, 1, 10000
 				);
-				camera.position.z = 500;
-				camera.add( new THREE.PointLight( 0xffffff, 1 ) );
+				camera.position.z = 1500;
+				camera.add( new THREE.AmbientLight( 0x333333 ) );
+				camera.add( new THREE.PointLight( 0xffffff, 1, 0 ) );
 
 				//
 
@@ -274,27 +283,6 @@
 
 				//
 
-				material = new THREE.MeshPhongMaterial( {
-					shading: THREE.SmoothShading
-				} );
-
-				pickingMaterial = new THREE.ShaderMaterial( {
-
-					uniforms: {
-						pickingColor: {
-							type: "c", value: new THREE.Color()
-						},
-						// modelViewProjectionMatrix: {
-						// 	type: "m4", value: new THREE.Matrix4()
-						// }
-					},
-					vertexShader: document.getElementById( 'pickingVert' ).textContent,
-					fragmentShader: document.getElementById( 'pickingFrag' ).textContent
-
-				} );
-
-				//
-
 				var boxGeo = new THREE.BoxGeometry( 1, 1, 1 );
 
 				highlightBox = new THREE.Group();
@@ -303,7 +291,7 @@
 					new THREE.Mesh(
 						boxGeo,
 						new THREE.MeshLambertMaterial( {
-							color: 0xffff00,
+							emissive: 0xffff00,
 							transparent: true,
 							opacity: 0.5,
 							side: THREE.BackSide
@@ -315,7 +303,7 @@
 					new THREE.Mesh(
 						boxGeo,
 						new THREE.MeshLambertMaterial( {
-							color: 0xffff00,
+							emissive: 0xffff00,
 							transparent: true,
 							opacity: 0.5,
 							side: THREE.FrontSide
@@ -334,51 +322,6 @@
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				renderer.sortObjects = false;
 				container.appendChild( renderer.domElement );
-
-				// patch the renderer to change the material's uniforms
-				// on a per object basis while using only a single material
-
-				var originalSetProgram = renderer.setProgram;
-
-				renderer.setProgram = function ( camera, lights, fog, material, object ) {
-
-					var program = originalSetProgram( camera, lights, fog, material, object );
-
-					//
-
-					if( useSingleMaterial ){
-
-						var pickingColorValue = object.userData[ "pickingColor" ];
-
-						if( pickingColorValue && material.uniforms ){
-
-							material.uniforms[ "pickingColor" ].value.setHex(
-								pickingColorValue
-							);
-
-							renderer.loadUniformsGeneric( material.uniformsList );
-
-						}
-
-					}
-
-					if( useSingleMaterial ){
-
-						var colorValue = object.userData[ "color" ];
-
-						if( colorValue ){
-
-							material.__webglShader.uniforms.diffuse.value.setHex( colorValue );
-
-							renderer.loadUniformsGeneric( material.uniformsList );
-
-						}
-
-					}
-
-					return program;
-
-				};
 
 				//
 
@@ -401,6 +344,8 @@
 				container.appendChild( stats.domElement );
 
 				renderer.domElement.addEventListener( 'mousemove', onMouseMove );
+
+				// controls.addEventListener( 'change', render );
 
 			}
 
@@ -452,15 +397,19 @@
 
 				if ( object ) {
 
-					//move the highlightBox so that it surrounds the picked object
+					// move the highlightBox so that it surrounds the picked object
 
 					if ( object.position && object.rotation && object.scale ){
 
 						highlightBox.position.copy( object.position );
 						highlightBox.rotation.copy( object.rotation );
 
-						highlightBox.children[0].scale.copy( object.scale ).multiplyScalar( scale );
-						highlightBox.children[1].scale.copy( object.scale ).multiplyScalar( scale );
+						highlightBox.children[0].scale.copy( object.scale )
+							.multiply( geometrySize )
+							.multiplyScalar( scale );
+						highlightBox.children[1].scale.copy(
+							highlightBox.children[0].scale
+						);
 
 						highlightBox.visible = true;
 
@@ -475,6 +424,8 @@
 			}
 
 			function render() {
+
+				// console.log( "render" )
 
 				pick();
 				renderer.render( scene, camera );
