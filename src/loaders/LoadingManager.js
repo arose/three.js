@@ -1,4 +1,3 @@
-var DefaultLoadingManager;
 
 /**
  * @author mrdoob / http://mrdoob.com/
@@ -69,7 +68,7 @@ function LoadingManager( onLoad, onProgress, onError ) {
 
 }
 
-DefaultLoadingManager = new LoadingManager();
+var DefaultLoadingManager = new LoadingManager();
 
 
 export { DefaultLoadingManager, LoadingManager };

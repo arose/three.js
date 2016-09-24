@@ -22,11 +22,22 @@ function glsl () {
 	};
 }
 
+// export default {
+// 	entry: 'src/Three.js',
+// 	dest: 'build/three.js',
+// 	moduleName: 'THREE',
+// 	format: 'umd',
+// 	plugins: [
+// 		glsl()
+// 	],
+// 	outro: outro
+// };
+
 export default {
 	entry: 'src/Three.js',
-	dest: 'build/three.js',
+	dest: 'build/three.es6.js',
 	moduleName: 'THREE',
-	format: 'umd',
+	format: 'es',
 	plugins: [
 		glsl()
 	],

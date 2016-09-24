@@ -1,10 +1,9 @@
-var UniformsUtils;
 
 /**
  * Uniform Utilities
  */
 
-UniformsUtils = {
+var UniformsUtils = {
 
 	merge: function ( uniforms ) {
 
