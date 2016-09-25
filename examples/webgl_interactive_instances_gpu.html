@@ -606,10 +606,10 @@
 			var vert = document.getElementById( 'vertMaterial' ).textContent;
 			var frag = document.getElementById( 'fragMaterial' ).textContent;
 
-			function updateColor( gl, renderer, scene, camera, geometry, material, object, group ) {
+			function updateColor( renderer, scene, camera, geometry, material, object, group ) {
 
 				if( material.program ){
-					material.program.getUniforms().setValue( gl, "color", object.userData.color );
+					material.program.getUniforms().setValue( renderer.getContext(), "color", object.userData.color );
 				}
 
 			}
@@ -623,10 +623,10 @@
 			} );
 			materialList.push( material );
 
-			function updatePickingColor( gl, renderer, scene, camera, geometry, material, object, group ) {
+			function updatePickingColor( renderer, scene, camera, geometry, material, object, group ) {
 
 				if( material.program ){
-					material.program.getUniforms().setValue( gl, "pickingColor", object.userData.pickingColor );
+					material.program.getUniforms().setValue( renderer.getContext(), "pickingColor", object.userData.pickingColor );
 				}
 
 			}
