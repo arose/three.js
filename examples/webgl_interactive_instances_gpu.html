@@ -606,9 +606,11 @@
 			var vert = document.getElementById( 'vertMaterial' ).textContent;
 			var frag = document.getElementById( 'fragMaterial' ).textContent;
 
-			function updateColor( object, material, camera ) {
+			function updateColor( gl, renderer, scene, camera, geometry, material, object, group ) {
 
-				this.value.setHex( object.userData.color );
+				if( material.program ){
+					material.program.getUniforms().setValue( gl, "color", object.userData.color );
+				}
 
 			}
 
@@ -616,14 +618,16 @@
 				vertexShader: vert,
 				fragmentShader: frag,
 				uniforms: {
-					color: new THREE.Uniform( new THREE.Color() ).onUpdate( updateColor )
+					color: new THREE.Uniform( new THREE.Color() )
 				}
 			} );
 			materialList.push( material );
 
-			function updatePickingColor( object, camera ) {
+			function updatePickingColor( gl, renderer, scene, camera, geometry, material, object, group ) {
 
-				this.value.setHex( object.userData.pickingColor );
+				if( material.program ){
+					material.program.getUniforms().setValue( gl, "pickingColor", object.userData.pickingColor );
+				}
 
 			}
 
@@ -631,7 +635,7 @@
 				vertexShader: "#define PICKING\n" + vert,
 				fragmentShader: "#define PICKING\n" + frag,
 				uniforms: {
-					pickingColor: new THREE.Uniform( new THREE.Color() ).onUpdate( updatePickingColor )
+					pickingColor: new THREE.Uniform( new THREE.Color() )
 				}
 			} );
 			materialList.push( pickingMaterial );
@@ -664,16 +668,18 @@
 				}
 
 				object.material = material;
-				object.userData[ "color" ] = Math.random() * 0xffffff;
+				object.onBeforeRender = updateColor;
+				object.userData[ "color" ] = new THREE.Color( Math.random() * 0xffffff ).toArray();
 
 				if ( useOverrideMaterial ) {
 
-					object.userData[ "pickingColor" ] = i + 1;
+					object.userData[ "pickingColor" ] = new THREE.Color( i + 1 ).toArray();
 
 				}else {
 
 					pickingObject.material = pickingMaterial;
-					pickingObject.userData[ "pickingColor" ] = i + 1;
+					pickingObject.onBeforeRender = updatePickingColor;
+					pickingObject.userData[ "pickingColor" ] = new THREE.Color( i + 1 ).toArray();
 
 				}
 
